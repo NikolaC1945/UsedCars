@@ -11,10 +11,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// simple health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// routes
 app.use("/api/auth", authRoutes);
 app.use("/api/cars", carRoutes);
 
