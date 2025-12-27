@@ -68,6 +68,9 @@ export async function getCarById(req, res) {
  */
 export async function createCar(req, res) {
   try {
+    console.log("REQ.USER:", req.user);
+    console.log("REQ.BODY:", req.body);
+
     const userId = req.user.id;
 
     const {
@@ -88,22 +91,24 @@ export async function createCar(req, res) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    const car = await prisma.car.create({
-      data: {
-        title,
-        brand,
-        model,
-        year: Number(year),
-        price: Number(price),
-        mileage: Number(mileage),
-        fuelType,
-        gearbox,
-        location,
-        description,
-        images: images || [],
-        ownerId: userId,
-      },
-    });
+  const car = await prisma.car.create({
+  data: {
+    title,
+    brand,
+    model,
+    year: Number(year) || 0,
+    price: Number(price) || 0,
+    mileage: Number(mileage) || 0,
+    fuelType: fuelType || "Unknown",
+    gearbox: gearbox || "Unknown",
+    location: location || "Unknown",
+    description,
+    images: images || [],
+    ownerId: userId,
+  },
+});
+
+
 
     res.status(201).json(car);
   } catch (error) {
