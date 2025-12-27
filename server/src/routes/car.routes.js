@@ -1,10 +1,22 @@
 import express from "express";
+import {
+  getCars,
+  getCarById,
+  createCar,
+  updateCar,
+  deleteCar,
+} from "../controllers/car.controller.js";
+import { authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// temporary test route
-router.get("/", (req, res) => {
-  res.json({ message: "Cars route works!" });
-});
+// public
+router.get("/", getCars);
+router.get("/:id", getCarById);
+
+// protected
+router.post("/", authRequired, createCar);
+router.put("/:id", authRequired, updateCar);
+router.delete("/:id", authRequired, deleteCar);
 
 export default router;
