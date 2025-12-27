@@ -4,22 +4,28 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateCar from "./pages/CreateCar";
-import CarDetails from "./pages/CarDetails";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-function App() {
+export default function App() {
   return (
     <>
       <Navbar />
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/cars/:id" element={<CarDetails />} />
-        <Route path="/cars/new" element={<CreateCar />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* 🔐 PROTECTED */}
+        <Route
+          path="/sell"
+          element={
+            <ProtectedRoute>
+              <CreateCar />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );
 }
-
-export default App;

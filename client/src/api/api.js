@@ -1,18 +1,22 @@
+import { getToken } from "./auth.api";
+
 const API_URL = "http://localhost:5000/api";
 
 export async function apiFetch(path, options = {}) {
+  const token = getToken();
+
   const res = await fetch(`${API_URL}${path}`, {
-    ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers || {}),
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
     },
-    body: options.body ? JSON.stringify(JSON.parse(options.body)) : options.body,
+    ...options,
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "API error");
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "API error");
   }
 
   return res.json();
