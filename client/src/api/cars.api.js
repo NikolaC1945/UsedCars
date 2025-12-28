@@ -1,28 +1,33 @@
-const API_URL = "http://localhost:5000/api";
+import api from "./api";
 
-export function getCars() {
-  return fetch(`${API_URL}/cars`).then((res) => res.json());
-}
+export const getCars = async () => {
+  const res = await api.get("/cars");
+  return res.data;
+};
 
-export function getCarById(id) {
-  return fetch(`${API_URL}/cars/${id}`).then((res) => res.json());
-}
+export const getCarById = async id => {
+  const res = await api.get(`/cars/${id}`);
+  return res.data;
+};
 
-export function createCar(data) {
-  const token = localStorage.getItem("token");
+export const createCar = async data => {
+  const res = await api.post("/cars", data);
+  return res.data;
+};
 
-  return fetch(`${API_URL}/cars`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  }).then(async (res) => {
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text);
-    }
-    return res.json();
-  });
-}
+export const updateCar = async (id, data) => {
+  const res = await api.put(`/cars/${id}`, data);
+  return res.data;
+};
+
+/* ✅ FINAL, CORRECT DELETE */
+export const deleteCarImage = async (id, image) => {
+  // image = "/uploads/1766880404908-274176794.jfif"
+  const filename = image.split("/").pop();
+
+  const res = await api.delete(
+    `/cars/${id}/image/${filename}`
+  );
+
+  return res.data;
+};

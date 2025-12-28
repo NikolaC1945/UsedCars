@@ -1,33 +1,44 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getToken, logout as apiLogout } from "../api/auth.api";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔄 runs once on app load / refresh
   useEffect(() => {
-    const storedToken = getToken();
-    if (storedToken) {
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (storedToken && storedUser) {
       setToken(storedToken);
+      setUser(JSON.parse(storedUser));
     }
+
     setLoading(false);
   }, []);
 
-  function login(token) {
-    setToken(token); // 🔥 THIS IS WHAT WAS MISSING
+  function login(token, user) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    setToken(token);
+    setUser(user);
   }
 
   function logout() {
-    apiLogout();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
     setToken(null);
+    setUser(null);
   }
 
   return (
     <AuthContext.Provider
       value={{
+        user,
         token,
         isAuthenticated: !!token,
         login,

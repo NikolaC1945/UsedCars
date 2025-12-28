@@ -1,40 +1,62 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getCars } from "../api/cars.api";
-import CarCard from "../components/CarCard";
+
+const API_URL = "http://localhost:5000";
 
 export default function Home() {
-
-  useEffect(() => {
-  getCars()
-    .then((data) => {
-      console.log("CARS FROM API:", data);
-      setCars(data);
-    })
-    .catch((err) => {
-      console.error("FETCH ERROR:", err);
-    })
-    .finally(() => setLoading(false));
-}, []);
-
   const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    getCars()
-      .then(setCars)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    getCars().then(setCars);
   }, []);
 
-  if (loading) {
-    return <p className="p-4">Loading cars...</p>;
-  }
-
   return (
-    <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-      {cars.map((car) => (
-        <CarCard key={car.id} car={car} />
-      ))}
+    <div className="w-full px-10 py-6">
+      <h1 className="text-2xl font-semibold mb-6">Cars</h1>
+
+      <div className="grid grid-cols-3 gap-6">
+        {cars.map(car => (
+          <div
+            key={car.id}
+            onClick={() => navigate(`/cars/${car.id}`)}
+            className="
+              max-w-sm
+              border rounded-lg overflow-hidden bg-white
+              cursor-pointer
+              transition
+              hover:shadow-lg
+            "
+          >
+            {/* IMAGE */}
+            <div className="h-36 bg-gray-100">
+              {car.cover ? (
+                <img
+                  src={`${API_URL}${car.cover}`}
+                  alt={car.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  No image
+                </div>
+              )}
+            </div>
+
+            {/* CONTENT */}
+            <div className="p-4">
+              <h2 className="font-medium text-base mb-1">
+                {car.title}
+              </h2>
+
+              <div className="text-base font-semibold">
+                €{car.price}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

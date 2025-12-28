@@ -1,48 +1,66 @@
 import { useState } from "react";
-import { login as apiLogin } from "../api/auth.api";
 import { useNavigate } from "react-router-dom";
+import { login as loginApi } from "../api/auth.api";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
-  const auth = useAuth();
+  const { login } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
 
     try {
-      const data = await apiLogin({ email, password });
+      const res = await loginApi({ email, password });
 
-      // 🔥 THIS LINE FIXES EVERYTHING
-      auth.login(data.token);
+      // ✅ SET TOKEN + USER U CONTEXT
+      login(res.token, res.user);
 
       navigate("/");
     } catch (err) {
-      alert(err.message || "Login failed");
+      console.error(err);
+      setError("Invalid email or password");
     }
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-4">Login</h1>
+    <div className="max-w-md mx-auto mt-16 p-6 border rounded">
+      <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      {error && (
+        <p className="bg-red-100 text-red-700 p-2 mb-4 text-center">
+          {error}
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          className="w-full border p-2"
+          type="email"
           placeholder="Email"
+          className="w-full border p-2"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
+          required
         />
+
         <input
           type="password"
-          className="w-full border p-2"
           placeholder="Password"
+          className="w-full border p-2"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
+          required
         />
-        <button className="w-full bg-black text-white p-2">
+
+        <button
+          type="submit"
+          className="w-full bg-black text-white p-2 hover:bg-gray-800"
+        >
           Login
         </button>
       </form>

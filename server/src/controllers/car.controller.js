@@ -1,183 +1,146 @@
 import prisma from "../config/prisma.js";
+import fs from "fs";
+import path from "path";
 
-/**
- * GET /api/cars
- * Public – list all cars
- */
-export async function getCars(req, res) {
-  try {
-    const cars = await prisma.car.findMany({
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+/* =======================
+   GET ALL
+======================= */
+export const getCars = async (req, res) => {
+  const cars = await prisma.car.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(cars);
+};
 
-    res.json(cars);
-  } catch (error) {
-    console.error("Get cars error:", error);
-    res.status(500).json({ message: "Failed to fetch cars." });
-  }
-}
+/* =======================
+   GET ONE
+======================= */
+export const getCarById = async (req, res) => {
+  const car = await prisma.car.findUnique({
+    where: { id: Number(req.params.id) },
+  });
+  res.json(car);
+};
 
-/**
- * GET /api/cars/:id
- * Public – single car
- */
-export async function getCarById(req, res) {
-  try {
-    const carId = Number(req.params.id);
-
-    const car = await prisma.car.findUnique({
-      where: { id: carId },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
-
-    if (!car) {
-      return res.status(404).json({ message: "Car not found." });
-    }
-
-    res.json(car);
-  } catch (error) {
-    console.error("Get car error:", error);
-    res.status(500).json({ message: "Failed to fetch car." });
-  }
-}
-
-/**
- * POST /api/cars
- * Protected – create car
- */
-export async function createCar(req, res) {
-  try {
-    console.log("REQ.USER:", req.user);
-    console.log("REQ.BODY:", req.body);
-
-    const userId = req.user.id;
-
-    const {
-      title,
-      brand,
-      model,
-      year,
-      price,
-      mileage,
-      fuelType,
-      gearbox,
-      location,
-      description,
-      images,
-    } = req.body;
-
-    if (!title || !brand || !model || !year || !price) {
-      return res.status(400).json({ message: "Missing required fields." });
-    }
+/* =======================
+   CREATE
+======================= */
+export const createCar = async (req, res) => {
+  const images = req.files?.map(f => `/uploads/${f.filename}`) || [];
 
   const car = await prisma.car.create({
-  data: {
-    title,
-    brand,
-    model,
-    year: Number(year) || 0,
-    price: Number(price) || 0,
-    mileage: Number(mileage) || 0,
-    fuelType: fuelType || "Unknown",
-    gearbox: gearbox || "Unknown",
-    location: location || "Unknown",
-    description,
-    images: images || [],
-    ownerId: userId,
-  },
-});
+    data: {
+      ...req.body,
+      price: Number(req.body.price),
+      year: Number(req.body.year),
+      mileage: Number(req.body.mileage),
+      images,
+      cover: images[0] || null,
+      userId: req.user.id,
+    },
+  });
 
+  res.status(201).json(car);
+};
 
+/* =======================
+   UPDATE (CRITICAL FIX)
+======================= */
+export const updateCar = async (req, res) => {
+  const id = Number(req.params.id);
 
-    res.status(201).json(car);
-  } catch (error) {
-    console.error("Create car error:", error);
-    res.status(500).json({ message: "Failed to create car." });
+  const existing = await prisma.car.findUnique({
+    where: { id },
+  });
+
+  if (!existing) return res.status(404).json({ message: "Not found" });
+
+  let images = existing.images;
+
+  if (req.body.existingImages) {
+    try {
+      const parsed = JSON.parse(req.body.existingImages);
+      if (Array.isArray(parsed)) images = parsed;
+    } catch {}
   }
-}
 
-/**
- * PUT /api/cars/:id
- * Protected – only owner
- */
-export async function updateCar(req, res) {
-  try {
-    const carId = Number(req.params.id);
-    const userId = req.user.id;
+  const uploaded = req.files?.map(f => `/uploads/${f.filename}`) || [];
+  images = [...images, ...uploaded];
 
-    const car = await prisma.car.findUnique({
-      where: { id: carId },
-    });
+  /* 🔴 COVER IS NEVER DERIVED FROM ORDER */
+  let cover = existing.cover;
 
-    if (!car) {
-      return res.status(404).json({ message: "Car not found." });
-    }
-
-    if (car.ownerId !== userId) {
-      return res.status(403).json({ message: "Not allowed." });
-    }
-
-    const updatedCar = await prisma.car.update({
-      where: { id: carId },
-      data: req.body,
-    });
-
-    res.json(updatedCar);
-  } catch (error) {
-    console.error("Update car error:", error);
-    res.status(500).json({ message: "Failed to update car." });
+  if (req.body.cover && images.includes(req.body.cover)) {
+    cover = req.body.cover;
   }
-}
 
-/**
- * DELETE /api/cars/:id
- * Protected – only owner
- */
-export async function deleteCar(req, res) {
-  try {
-    const carId = Number(req.params.id);
-    const userId = req.user.id;
-
-    const car = await prisma.car.findUnique({
-      where: { id: carId },
-    });
-
-    if (!car) {
-      return res.status(404).json({ message: "Car not found." });
-    }
-
-    if (car.ownerId !== userId) {
-      return res.status(403).json({ message: "Not allowed." });
-    }
-
-    await prisma.car.delete({
-      where: { id: carId },
-    });
-
-    res.json({ message: "Car deleted successfully." });
-  } catch (error) {
-    console.error("Delete car error:", error);
-    res.status(500).json({ message: "Failed to delete car." });
+  if (!cover || !images.includes(cover)) {
+    cover = images[0] || null;
   }
-}
+
+  const safe = (v, f) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : f;
+  };
+
+  const car = await prisma.car.update({
+    where: { id },
+    data: {
+      title: req.body.title,
+      brand: req.body.brand,
+      model: req.body.model,
+      fuelType: req.body.fuelType,
+      gearbox: req.body.gearbox,
+      location: req.body.location,
+      description: req.body.description,
+      price: safe(req.body.price, existing.price),
+      year: safe(req.body.year, existing.year),
+      mileage: safe(req.body.mileage, existing.mileage),
+      images,
+      cover,
+    },
+  });
+
+  res.json(car);
+};
+
+/* =======================
+   DELETE IMAGE
+======================= */
+export const deleteCarImage = async (req, res) => {
+  const id = Number(req.params.id);
+  const { filename } = req.params;
+  const img = `/uploads/${filename}`;
+
+  const car = await prisma.car.findUnique({ where: { id } });
+
+  const images = car.images.filter(i => i !== img);
+
+  let cover = car.cover === img ? images[0] || null : car.cover;
+
+  await prisma.car.update({
+    where: { id },
+    data: { images, cover },
+  });
+
+  const full = path.join(process.cwd(), img);
+  if (fs.existsSync(full)) fs.unlinkSync(full);
+
+  res.json({ success: true });
+};
+
+/* =======================
+   DELETE CAR
+======================= */
+export const deleteCar = async (req, res) => {
+  const id = Number(req.params.id);
+  const car = await prisma.car.findUnique({ where: { id } });
+
+  car.images.forEach(i => {
+    const p = path.join(process.cwd(), i);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  });
+
+  await prisma.car.delete({ where: { id } });
+  res.json({ success: true });
+};

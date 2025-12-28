@@ -1,49 +1,39 @@
-const API_URL = "http://localhost:5000/api";
-
-export function getToken() {
-  return localStorage.getItem("token");
-}
+import apiFetch from "./api";
 
 export async function login(credentials) {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const data = await apiFetch("/auth/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
+    body: JSON.stringify(credentials)
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Login failed");
-  }
-
-  // store token
   localStorage.setItem("token", data.token);
+  localStorage.setItem("user", JSON.stringify(data.user));
 
-  return data; // { token, user }
+  return data;
 }
 
 export async function register(payload) {
-  const res = await fetch(`${API_URL}/auth/register`, {
+  const data = await apiFetch("/auth/register", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload)
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Register failed");
-  }
-
   localStorage.setItem("token", data.token);
+  localStorage.setItem("user", JSON.stringify(data.user));
+
   return data;
 }
 
 export function logout() {
   localStorage.removeItem("token");
+  localStorage.removeItem("user");
+}
+
+export function getToken() {
+  return localStorage.getItem("token");
+}
+
+export function getStoredUser() {
+  const user = localStorage.getItem("user");
+  return user ? JSON.parse(user) : null;
 }
