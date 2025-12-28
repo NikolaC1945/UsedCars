@@ -3,144 +3,202 @@ import fs from "fs";
 import path from "path";
 
 /* =======================
-   GET ALL
+   GET ALL CARS
 ======================= */
 export const getCars = async (req, res) => {
-  const cars = await prisma.car.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-  res.json(cars);
+  try {
+    const cars = await prisma.car.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(cars);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch cars" });
+  }
 };
 
 /* =======================
-   GET ONE
+   GET CAR BY ID
 ======================= */
 export const getCarById = async (req, res) => {
-  const car = await prisma.car.findUnique({
-    where: { id: Number(req.params.id) },
-  });
-  res.json(car);
+  try {
+    const car = await prisma.car.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    res.json(car);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch car" });
+  }
 };
 
 /* =======================
-   CREATE
+   CREATE CAR
 ======================= */
 export const createCar = async (req, res) => {
-  const images = req.files?.map(f => `/uploads/${f.filename}`) || [];
+  try {
+    const images = req.files?.map(f => `/uploads/${f.filename}`) || [];
 
-  const car = await prisma.car.create({
-    data: {
-      ...req.body,
-      price: Number(req.body.price),
-      year: Number(req.body.year),
-      mileage: Number(req.body.mileage),
-      images,
-      cover: images[0] || null,
-      userId: req.user.id,
-    },
-  });
+    const car = await prisma.car.create({
+      data: {
+        ...req.body,
+        price: Number(req.body.price),
+        year: Number(req.body.year),
+        mileage: Number(req.body.mileage),
+        images,
+        cover: images[0] || null,
+        userId: req.user.id,
+      },
+    });
 
-  res.status(201).json(car);
+    res.status(201).json(car);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create car" });
+  }
 };
 
 /* =======================
-   UPDATE (CRITICAL FIX)
+   UPDATE CAR
 ======================= */
 export const updateCar = async (req, res) => {
-  const id = Number(req.params.id);
+  try {
+    const carId = Number(req.params.id);
 
-  const existing = await prisma.car.findUnique({
-    where: { id },
-  });
+    const existingCar = await prisma.car.findUnique({
+      where: { id: carId },
+    });
 
-  if (!existing) return res.status(404).json({ message: "Not found" });
+    if (!existingCar) {
+      return res.status(404).json({ message: "Car not found" });
+    }
 
-  let images = existing.images;
+    /* EXISTING IMAGES (SAFE) */
+    let existingImages = existingCar.images;
 
-  if (req.body.existingImages) {
-    try {
-      const parsed = JSON.parse(req.body.existingImages);
-      if (Array.isArray(parsed)) images = parsed;
-    } catch {}
+    if (typeof req.body.existingImages === "string") {
+      try {
+        const parsed = JSON.parse(req.body.existingImages);
+        if (Array.isArray(parsed)) existingImages = parsed;
+      } catch {}
+    }
+
+    const newImages = req.files?.map(f => `/uploads/${f.filename}`) || [];
+    const images = [...existingImages, ...newImages];
+
+    /* COVER (SAFE) */
+    let cover = existingCar.cover;
+    if (req.body.cover && images.includes(req.body.cover)) {
+      cover = req.body.cover;
+    } else if (!images.includes(cover)) {
+      cover = images[0] || null;
+    }
+
+    /* 🔒 SAFE NUMBER PARSING */
+    const safeNumber = (value, fallback) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    const car = await prisma.car.update({
+      where: { id: carId },
+      data: {
+        title: req.body.title ?? existingCar.title,
+        brand: req.body.brand ?? existingCar.brand,
+        model: req.body.model ?? existingCar.model,
+        fuelType: req.body.fuelType ?? existingCar.fuelType,
+        gearbox: req.body.gearbox ?? existingCar.gearbox,
+        location: req.body.location ?? existingCar.location,
+        description: req.body.description ?? existingCar.description,
+
+        price: safeNumber(req.body.price, existingCar.price),
+        year: safeNumber(req.body.year, existingCar.year),
+        mileage: safeNumber(req.body.mileage, existingCar.mileage),
+
+        images,
+        cover,
+      },
+    });
+
+    res.json(car);
+  } catch (err) {
+    console.error("UPDATE CAR ERROR:", err);
+    res.status(500).json({ message: "Failed to update car" });
   }
-
-  const uploaded = req.files?.map(f => `/uploads/${f.filename}`) || [];
-  images = [...images, ...uploaded];
-
-  /* 🔴 COVER IS NEVER DERIVED FROM ORDER */
-  let cover = existing.cover;
-
-  if (req.body.cover && images.includes(req.body.cover)) {
-    cover = req.body.cover;
-  }
-
-  if (!cover || !images.includes(cover)) {
-    cover = images[0] || null;
-  }
-
-  const safe = (v, f) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : f;
-  };
-
-  const car = await prisma.car.update({
-    where: { id },
-    data: {
-      title: req.body.title,
-      brand: req.body.brand,
-      model: req.body.model,
-      fuelType: req.body.fuelType,
-      gearbox: req.body.gearbox,
-      location: req.body.location,
-      description: req.body.description,
-      price: safe(req.body.price, existing.price),
-      year: safe(req.body.year, existing.year),
-      mileage: safe(req.body.mileage, existing.mileage),
-      images,
-      cover,
-    },
-  });
-
-  res.json(car);
 };
 
+
+
+
 /* =======================
-   DELETE IMAGE
+   DELETE SINGLE IMAGE
 ======================= */
 export const deleteCarImage = async (req, res) => {
-  const id = Number(req.params.id);
-  const { filename } = req.params;
-  const img = `/uploads/${filename}`;
+  try {
+    const carId = Number(req.params.id);
+    const { filename } = req.params;
+    const imagePath = `/uploads/${filename}`;
 
-  const car = await prisma.car.findUnique({ where: { id } });
+    const car = await prisma.car.findUnique({
+      where: { id: carId },
+    });
 
-  const images = car.images.filter(i => i !== img);
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
 
-  let cover = car.cover === img ? images[0] || null : car.cover;
+    const images = car.images.filter(img => img !== imagePath);
 
-  await prisma.car.update({
-    where: { id },
-    data: { images, cover },
-  });
+    await prisma.car.update({
+      where: { id: carId },
+      data: {
+        images,
+        cover:
+          car.cover === imagePath ? images[0] || null : car.cover,
+      },
+    });
 
-  const full = path.join(process.cwd(), img);
-  if (fs.existsSync(full)) fs.unlinkSync(full);
+    const fullPath = path.join(process.cwd(), imagePath);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete image" });
+  }
 };
 
 /* =======================
    DELETE CAR
 ======================= */
 export const deleteCar = async (req, res) => {
-  const id = Number(req.params.id);
-  const car = await prisma.car.findUnique({ where: { id } });
+  try {
+    const carId = Number(req.params.id);
 
-  car.images.forEach(i => {
-    const p = path.join(process.cwd(), i);
-    if (fs.existsSync(p)) fs.unlinkSync(p);
-  });
+    const car = await prisma.car.findUnique({
+      where: { id: carId },
+    });
 
-  await prisma.car.delete({ where: { id } });
-  res.json({ success: true });
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    car.images.forEach(img => {
+      const fullPath = path.join(process.cwd(), img);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    });
+
+    await prisma.car.delete({
+      where: { id: carId },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete car" });
+  }
 };

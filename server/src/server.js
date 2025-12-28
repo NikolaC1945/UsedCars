@@ -4,6 +4,10 @@ import carRoutes from "./routes/car.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import path from "path";
 
+import dotenv from "dotenv";
+dotenv.config();
+
+
 const app = express();
 
 /* =========================

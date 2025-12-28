@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCars } from "../api/cars.api";
 
-const API_URL = "http://localhost:5000";
-
 export default function Home() {
   const [cars, setCars] = useState([]);
   const navigate = useNavigate();
@@ -20,39 +18,17 @@ export default function Home() {
         {cars.map(car => (
           <div
             key={car.id}
+            className="border rounded p-4 cursor-pointer hover:shadow"
             onClick={() => navigate(`/cars/${car.id}`)}
-            className="
-              max-w-sm
-              border rounded-lg overflow-hidden bg-white
-              cursor-pointer
-              transition
-              hover:shadow-lg
-            "
           >
-            {/* IMAGE */}
-            <div className="h-36 bg-gray-100">
-              {car.cover ? (
-                <img
-                  src={`${API_URL}${car.cover}`}
-                  alt={car.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  No image
-                </div>
-              )}
-            </div>
+            <h2 className="font-medium">{car.title}</h2>
 
-            {/* CONTENT */}
-            <div className="p-4">
-              <h2 className="font-medium text-base mb-1">
-                {car.title}
-              </h2>
+            <p className="text-sm text-gray-600 mt-2">
+              {car.brand} {car.model}
+            </p>
 
-              <div className="text-base font-semibold">
-                €{car.price}
-              </div>
+            <div className="mt-4 font-semibold">
+              €{car.price}
             </div>
           </div>
         ))}
