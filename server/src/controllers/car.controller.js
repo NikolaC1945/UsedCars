@@ -42,23 +42,44 @@ export const createCar = async (req, res) => {
   try {
     const images = req.files?.map(f => `/uploads/${f.filename}`) || [];
 
+    const {
+      title,
+      brand,
+      model,
+      fuelType,
+      location,
+      description,
+      price,
+      year,
+      mileage,
+      gearbox,
+    } = req.body;
+
     const car = await prisma.car.create({
       data: {
-        ...req.body,
-        price: Number(req.body.price),
-        year: Number(req.body.year),
-        mileage: Number(req.body.mileage),
+        title,
+        brand,
+        model,
+        fuelType,
+        location,
+        description,
+        gearbox,
+        price: Number(price),
+        year: Number(year),
+        mileage: Number(mileage),
         images,
         cover: images[0] || null,
-        userId: req.user.id,
+        ownerId: req.user.id,
       },
     });
 
     res.status(201).json(car);
   } catch (err) {
+    console.error("CREATE CAR ERROR:", err); // 👈 OVO JE KLJUČNO
     res.status(500).json({ message: "Failed to create car" });
   }
 };
+
 
 /* =======================
    UPDATE CAR
