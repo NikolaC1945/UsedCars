@@ -14,7 +14,6 @@ model User {
   name      String
   phone     String?
   createdAt DateTime @default(now())
-
   cars      Car[]
 }
 
@@ -30,10 +29,10 @@ model Car {
   gearbox     String
   location    String
   description String?
-  images      String[] // JSONB array of image URLs
-  cover     String?
+  images      String[]
+  cover       String?
+  isSold      Boolean  @default(false)
   createdAt   DateTime @default(now())
-
-  ownerId Int
-  owner   User @relation(fields: [ownerId], references: [id])
+  ownerId     Int
+  owner       User     @relation(fields: [ownerId], references: [id])
 }

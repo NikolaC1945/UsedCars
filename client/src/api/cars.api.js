@@ -15,6 +15,12 @@ export const createCar = async data => {
   return res.data;
 };
 
+export const getMyCars = async () => {
+  const res = await api.get("/cars/my");
+  return res.data;
+};
+
+
 export const updateCar = async (id, data) => {
   const res = await api.put(`/cars/${id}`, data);
   return res.data;

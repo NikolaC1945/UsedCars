@@ -6,6 +6,7 @@ import CreateCar from "./pages/CreateCar";
 import CarDetails from "./pages/CarDetails";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
     </>

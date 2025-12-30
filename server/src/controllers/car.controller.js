@@ -10,6 +10,7 @@ export const getCars = async (req, res) => {
     const cars = await prisma.car.findMany({
       orderBy: { createdAt: "desc" },
     });
+
     res.json(cars);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch cars" });
@@ -69,17 +70,17 @@ export const createCar = async (req, res) => {
         mileage: Number(mileage),
         images,
         cover: images[0] || null,
+        isSold: false,
         ownerId: req.user.id,
       },
     });
 
     res.status(201).json(car);
   } catch (err) {
-    console.error("CREATE CAR ERROR:", err); // 👈 OVO JE KLJUČNO
+    console.error("CREATE CAR ERROR:", err);
     res.status(500).json({ message: "Failed to create car" });
   }
 };
-
 
 /* =======================
    UPDATE CAR
@@ -96,7 +97,7 @@ export const updateCar = async (req, res) => {
       return res.status(404).json({ message: "Car not found" });
     }
 
-    /* EXISTING IMAGES (SAFE) */
+    /* EXISTING IMAGES */
     let existingImages = existingCar.images;
 
     if (typeof req.body.existingImages === "string") {
@@ -109,15 +110,23 @@ export const updateCar = async (req, res) => {
     const newImages = req.files?.map(f => `/uploads/${f.filename}`) || [];
     const images = [...existingImages, ...newImages];
 
-    /* COVER (SAFE) */
+    /* COVER */
     let cover = existingCar.cover;
-    if (req.body.cover && images.includes(req.body.cover)) {
-      cover = req.body.cover;
+
+    if (req.body.cover) {
+      const normalizedCover = req.body.cover.replace(
+        "http://localhost:5000",
+        ""
+      );
+
+      if (images.includes(normalizedCover)) {
+        cover = normalizedCover;
+      }
     } else if (!images.includes(cover)) {
       cover = images[0] || null;
     }
 
-    /* 🔒 SAFE NUMBER PARSING */
+    /* SAFE NUMBER PARSING */
     const safeNumber = (value, fallback) => {
       const n = Number(value);
       return Number.isFinite(n) ? n : fallback;
@@ -150,9 +159,6 @@ export const updateCar = async (req, res) => {
   }
 };
 
-
-
-
 /* =======================
    DELETE SINGLE IMAGE
 ======================= */
@@ -176,8 +182,7 @@ export const deleteCarImage = async (req, res) => {
       where: { id: carId },
       data: {
         images,
-        cover:
-          car.cover === imagePath ? images[0] || null : car.cover,
+        cover: car.cover === imagePath ? images[0] || null : car.cover,
       },
     });
 
@@ -189,6 +194,63 @@ export const deleteCarImage = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: "Failed to delete image" });
+  }
+};
+
+/* =======================
+   GET MY CARS (ACTIVE / SOLD)
+======================= */
+export const getMyCars = async (req, res) => {
+  try {
+    const status = req.query.status; // active | sold
+
+    const where = {
+      ownerId: req.user.id,
+    };
+
+    if (status === "active") where.isSold = false;
+    if (status === "sold") where.isSold = true;
+
+    const cars = await prisma.car.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(cars);
+  } catch (err) {
+    console.error("GET MY CARS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch user cars" });
+  }
+};
+
+/* =======================
+   MARK CAR AS SOLD
+======================= */
+export const markCarAsSold = async (req, res) => {
+  try {
+    const carId = Number(req.params.id);
+
+    const car = await prisma.car.findUnique({
+      where: { id: carId },
+    });
+
+    if (!car) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    if (car.ownerId !== req.user.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const updated = await prisma.car.update({
+      where: { id: carId },
+      data: { isSold: true },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    console.error("MARK AS SOLD ERROR:", err);
+    res.status(500).json({ message: "Failed to mark car as sold" });
   }
 };
 

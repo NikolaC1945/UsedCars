@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCarById } from "../api/cars.api";
+import { useAuth } from "../context/AuthContext";
 
 const API_URL = "http://localhost:5000";
 
 export default function CarDetails() {
   const { id } = useParams();
+  const { user, isAuthenticated } = useAuth();
+
   const [car, setCar] = useState(null);
   const [index, setIndex] = useState(0);
 
@@ -16,6 +19,9 @@ export default function CarDetails() {
   if (!car) return <p style={{ padding: 40 }}>Loading...</p>;
 
   const images = car.images || [];
+
+  const isOwner =
+    isAuthenticated && user?.id === car.ownerId;
 
   function prev() {
     setIndex(i => (i === 0 ? images.length - 1 : i - 1));
@@ -108,22 +114,24 @@ export default function CarDetails() {
             <Spec label="Condition" value="Used" />
           </div>
 
-          {/* ✅ ONLY CHANGE IS HERE */}
-          <Link to={`/edit/${car.id}`}>
-            <button
-              style={{
-                width: "100%",
-                padding: "14px 0",
-                background: "#000",
-                color: "#fff",
-                border: "none",
-                fontSize: 16,
-                cursor: "pointer",
-              }}
-            >
-              Edit car
-            </button>
-          </Link>
+          {/* ✅ EDIT – SAMO AKO JE OWNER */}
+          {isOwner && (
+            <Link to={`/edit/${car.id}`}>
+              <button
+                style={{
+                  width: "100%",
+                  padding: "14px 0",
+                  background: "#000",
+                  color: "#fff",
+                  border: "none",
+                  fontSize: 16,
+                  cursor: "pointer",
+                }}
+              >
+                Edit car
+              </button>
+            </Link>
+          )}
         </aside>
       </div>
     </div>

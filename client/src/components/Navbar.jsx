@@ -49,6 +49,16 @@ export default function Navbar() {
                 Sell a car
               </NavLink>
 
+              <NavLink
+                to="/profile"
+                style={({ isActive }) => ({
+                  fontWeight: 600,
+                  color: isActive ? "var(--accent)" : "var(--primary)",
+                })}
+              >
+                Profile
+              </NavLink>
+
               <button
                 type="button"
                 onClick={handleLogout}

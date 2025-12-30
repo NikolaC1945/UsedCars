@@ -6,6 +6,8 @@ import {
   updateCar,
   deleteCar,
   deleteCarImage,
+  getMyCars,
+  markCarAsSold,
 } from "../controllers/car.controller.js";
 
 import { authRequired } from "../middleware/authMiddleware.js";
@@ -13,13 +15,29 @@ import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
-/* GET ALL */
+/* =======================
+   GET ALL
+======================= */
 router.get("/", getCars);
 
-/* GET ONE */
+/* =======================
+   GET MY CARS (PROFILE)
+======================= */
+router.get("/my", authRequired, getMyCars);
+
+/* =======================
+   MARK AS SOLD
+======================= */
+router.patch("/:id/sold", authRequired, markCarAsSold);
+
+/* =======================
+   GET ONE
+======================= */
 router.get("/:id", getCarById);
 
-/* CREATE */
+/* =======================
+   CREATE
+======================= */
 router.post(
   "/",
   authRequired,
@@ -27,7 +45,9 @@ router.post(
   createCar
 );
 
-/* UPDATE */
+/* =======================
+   UPDATE
+======================= */
 router.put(
   "/:id",
   authRequired,
@@ -35,14 +55,18 @@ router.put(
   updateCar
 );
 
-/* DELETE IMAGE */
+/* =======================
+   DELETE IMAGE
+======================= */
 router.delete(
   "/:id/image/:filename",
   authRequired,
   deleteCarImage
 );
 
-/* DELETE CAR */
+/* =======================
+   DELETE CAR
+======================= */
 router.delete("/:id", authRequired, deleteCar);
 
 export default router;
