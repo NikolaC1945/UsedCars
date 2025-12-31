@@ -8,6 +8,7 @@ import path from "path";
 export const getCars = async (req, res) => {
   try {
     const cars = await prisma.car.findMany({
+      where: { isSold: false },
       orderBy: { createdAt: "desc" },
     });
 

@@ -22,9 +22,18 @@ export default function Navbar() {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ fontSize: 22, fontWeight: 800 }}>
+        {/* ✅ LOGO → HOME */}
+        <NavLink
+          to="/"
+          style={{
+            fontSize: 22,
+            fontWeight: 800,
+            textDecoration: "none",
+            color: "var(--primary)",
+          }}
+        >
           Used<span style={{ color: "var(--accent)" }}>Cars</span>
-        </div>
+        </NavLink>
 
         <nav style={{ display: "flex", gap: 28, alignItems: "center" }}>
           <NavLink

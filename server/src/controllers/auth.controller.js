@@ -4,13 +4,48 @@ import prisma from "../config/prisma.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+/* =====================
+   PASSWORD VALIDATION
+===================== */
+function isValidPassword(password) {
+  if (password.length < 7) return false;
+
+  let hasLetter = false;
+  let hasNumber = false;
+
+  for (const char of password) {
+    if (
+      (char >= "a" && char <= "z") ||
+      (char >= "A" && char <= "Z")
+    ) {
+      hasLetter = true;
+    }
+
+    if (char >= "0" && char <= "9") {
+      hasNumber = true;
+    }
+  }
+
+  return hasLetter && hasNumber;
+}
+
 // POST /api/auth/register
 export async function register(req, res) {
   try {
     const { email, password, name, phone } = req.body;
 
     if (!email || !password || !name) {
-      return res.status(400).json({ message: "Email, password and name are required." });
+      return res
+        .status(400)
+        .json({ message: "Email, password and name are required." });
+    }
+
+    // ✅ PASSWORD VALIDATION
+    if (!isValidPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 7 characters long and contain at least one letter and one number.",
+      });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -18,7 +53,9 @@ export async function register(req, res) {
     });
 
     if (existingUser) {
-      return res.status(409).json({ message: "User with this email already exists." });
+      return res
+        .status(409)
+        .json({ message: "User with this email already exists." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -49,7 +86,9 @@ export async function register(req, res) {
     });
   } catch (error) {
     console.error("Register error:", error);
-    return res.status(500).json({ message: "Something went wrong during registration." });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong during registration." });
   }
 }
 
@@ -59,7 +98,9 @@ export async function login(req, res) {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required." });
     }
 
     const user = await prisma.user.findUnique({
@@ -67,13 +108,20 @@ export async function login(req, res) {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res
+        .status(401)
+        .json({ message: "Invalid email or password." });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res
+        .status(401)
+        .json({ message: "Invalid email or password." });
     }
 
     const token = jwt.sign(
@@ -93,6 +141,8 @@ export async function login(req, res) {
     });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(500).json({ message: "Something went wrong during login." });
+    return res
+      .status(500)
+      .json({ message: "Something went wrong during login." });
   }
 }
