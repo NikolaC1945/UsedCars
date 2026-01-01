@@ -3,10 +3,10 @@ import cors from "cors";
 import carRoutes from "./routes/car.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import path from "path";
+import userRoutes from "./routes/user.routes.js";
 
 import dotenv from "dotenv";
 dotenv.config();
-
 
 const app = express();
 
@@ -32,6 +32,8 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
    ========================= */
 app.use("/api/cars", carRoutes);
 app.use("/api/auth", authRoutes);
+
+app.use("/api/users", userRoutes);
 
 /* =========================
    START SERVER

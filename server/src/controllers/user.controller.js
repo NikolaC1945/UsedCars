@@ -10,11 +10,51 @@ export async function getMyProfile(req, res) {
       name: true,
       email: true,
       phone: true,
-      cars: {
-        orderBy: { createdAt: "desc" },
-      },
     },
   });
 
   res.json(user);
+}
+
+export async function getUserById(req, res) {
+  try {
+    const userId = Number(req.params.id);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true, // možeš kasnije maknuti ako ne želiš javno
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error("GET USER BY ID ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+}
+
+export async function getUserCars(req, res) {
+  try {
+    const userId = Number(req.params.id);
+
+    const cars = await prisma.car.findMany({
+      where: {
+        ownerId: userId,
+        isSold: false,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(cars);
+  } catch (err) {
+    console.error("GET USER CARS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch user cars" });
+  }
 }

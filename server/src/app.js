@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import carRoutes from "./routes/car.routes.js";
+import userRoutes from "./routes/user.routes.js";
 import path from "path";
 
 dotenv.config();
@@ -41,5 +42,6 @@ app.get("/api/health", (req, res) => {
    ========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/cars", carRoutes);
+app.use("/api/users", userRoutes);
 
 export default app;

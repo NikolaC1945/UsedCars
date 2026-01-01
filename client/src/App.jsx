@@ -28,7 +28,6 @@ export default function App() {
             }
           />
 
-          {/* ✅ EDIT ROUTE */}
           <Route
             path="/edit/:id"
             element={
@@ -40,7 +39,12 @@ export default function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* 👇 MOJ PROFIL */}
           <Route path="/profile" element={<Profile />} />
+
+          {/* 👇 TUĐI PROFIL */}
+          <Route path="/profile/:userId" element={<Profile />} />
         </Routes>
       </main>
     </>

@@ -62,7 +62,7 @@ export default function Home() {
       {/* =====================
           CARS GRID (EXISTING + UPGRADED CARD)
          ===================== */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-4">
         {filteredCars.map(car => (
           <div
             key={car.id}

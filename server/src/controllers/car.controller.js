@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 /* =======================
-   GET ALL CARS
+   GET ALL CARS (HOME)
 ======================= */
 export const getCars = async (req, res) => {
   try {
@@ -19,12 +19,21 @@ export const getCars = async (req, res) => {
 };
 
 /* =======================
-   GET CAR BY ID
+   GET CAR BY ID (DETAILS)
 ======================= */
 export const getCarById = async (req, res) => {
   try {
     const car = await prisma.car.findUnique({
       where: { id: Number(req.params.id) },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     if (!car) {
@@ -98,7 +107,6 @@ export const updateCar = async (req, res) => {
       return res.status(404).json({ message: "Car not found" });
     }
 
-    /* EXISTING IMAGES */
     let existingImages = existingCar.images;
 
     if (typeof req.body.existingImages === "string") {
@@ -111,7 +119,6 @@ export const updateCar = async (req, res) => {
     const newImages = req.files?.map(f => `/uploads/${f.filename}`) || [];
     const images = [...existingImages, ...newImages];
 
-    /* COVER */
     let cover = existingCar.cover;
 
     if (req.body.cover) {
@@ -127,7 +134,6 @@ export const updateCar = async (req, res) => {
       cover = images[0] || null;
     }
 
-    /* SAFE NUMBER PARSING */
     const safeNumber = (value, fallback) => {
       const n = Number(value);
       return Number.isFinite(n) ? n : fallback;
@@ -143,11 +149,9 @@ export const updateCar = async (req, res) => {
         gearbox: req.body.gearbox ?? existingCar.gearbox,
         location: req.body.location ?? existingCar.location,
         description: req.body.description ?? existingCar.description,
-
         price: safeNumber(req.body.price, existingCar.price),
         year: safeNumber(req.body.year, existingCar.year),
         mileage: safeNumber(req.body.mileage, existingCar.mileage),
-
         images,
         cover,
       },
@@ -199,16 +203,13 @@ export const deleteCarImage = async (req, res) => {
 };
 
 /* =======================
-   GET MY CARS (ACTIVE / SOLD)
+   GET MY CARS
 ======================= */
 export const getMyCars = async (req, res) => {
   try {
-    const status = req.query.status; // active | sold
+    const status = req.query.status;
 
-    const where = {
-      ownerId: req.user.id,
-    };
-
+    const where = { ownerId: req.user.id };
     if (status === "active") where.isSold = false;
     if (status === "sold") where.isSold = true;
 
@@ -225,7 +226,7 @@ export const getMyCars = async (req, res) => {
 };
 
 /* =======================
-   MARK CAR AS SOLD
+   MARK AS SOLD
 ======================= */
 export const markCarAsSold = async (req, res) => {
   try {

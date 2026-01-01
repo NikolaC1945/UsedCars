@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getCarById } from "../api/cars.api";
 import { useAuth } from "../context/AuthContext";
 
@@ -7,6 +7,7 @@ const API_URL = "http://localhost:5000";
 
 export default function CarDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
   const [car, setCar] = useState(null);
@@ -29,6 +30,16 @@ export default function CarDetails() {
 
   function next() {
     setIndex(i => (i === images.length - 1 ? 0 : i + 1));
+  }
+
+  function goToSellerProfile() {
+    if (!car.owner) return;
+
+    if (isOwner) {
+      navigate("/profile");
+    } else {
+      navigate(`/profile/${car.owner.id}`);
+    }
   }
 
   return (
@@ -114,7 +125,42 @@ export default function CarDetails() {
             <Spec label="Condition" value="Used" />
           </div>
 
-          {/* ✅ EDIT – SAMO AKO JE OWNER */}
+          {/* SELLER INFO – CLICKABLE */}
+          <div
+            onClick={goToSellerProfile}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              paddingTop: 16,
+              marginBottom: 24,
+              borderTop: "1px solid #eee",
+              cursor: "pointer",
+            }}
+          >
+            <img
+              src="/avatar.png"
+              alt="Seller avatar"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                objectFit: "cover",
+                background: "#f2f2f2",
+              }}
+            />
+
+            <div>
+              <div style={{ fontWeight: 600 }}>
+                {car.owner?.name || "Unknown seller"}
+              </div>
+              <div style={{ fontSize: 13, color: "#777" }}>
+                Seller
+              </div>
+            </div>
+          </div>
+
+          {/* EDIT – SAMO AKO JE OWNER */}
           {isOwner && (
             <Link to={`/edit/${car.id}`}>
               <button
