@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Footer from "./components/Footer";
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
           {/* 👇 TUĐI PROFIL */}
           <Route path="/profile/:userId" element={<Profile />} />
         </Routes>
+        <Footer />
       </main>
     </>
   );
