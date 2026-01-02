@@ -15,6 +15,7 @@ model User {
   phone     String?
   createdAt DateTime @default(now())
   cars      Car[]
+  favorites Favorite[]
 }
 
 model Car {
@@ -35,4 +36,15 @@ model Car {
   createdAt   DateTime @default(now())
   ownerId     Int
   owner       User     @relation(fields: [ownerId], references: [id])
+}
+
+model Favorite {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  carId  Int
+
+  user User @relation(fields: [userId], references: [id])
+  car  Car  @relation(fields: [carId], references: [id])
+
+  @@unique([userId, carId]) // nema duplog sejvovanja
 }

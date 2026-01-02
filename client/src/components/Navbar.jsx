@@ -11,7 +11,16 @@ export default function Navbar() {
   }
 
   return (
-    <header style={{ background: "#fff", borderBottom: "1px solid var(--border)" }}>
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+        background: "#fff",
+        borderBottom: "1px solid var(--border)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}
+    >
       <div
         style={{
           maxWidth: 1400,
@@ -22,7 +31,7 @@ export default function Navbar() {
           justifyContent: "space-between",
         }}
       >
-        {/* ✅ LOGO → HOME */}
+        {/* LOGO */}
         <NavLink
           to="/"
           style={{
@@ -35,11 +44,13 @@ export default function Navbar() {
           Used<span style={{ color: "var(--accent)" }}>Cars</span>
         </NavLink>
 
+        {/* NAV */}
         <nav style={{ display: "flex", gap: 28, alignItems: "center" }}>
           <NavLink
             to="/"
             style={({ isActive }) => ({
               fontWeight: 600,
+              textDecoration: "none",
               color: isActive ? "var(--accent)" : "var(--primary)",
             })}
           >
@@ -52,6 +63,7 @@ export default function Navbar() {
                 to="/sell"
                 style={({ isActive }) => ({
                   fontWeight: 600,
+                  textDecoration: "none",
                   color: isActive ? "var(--accent)" : "var(--primary)",
                 })}
               >
@@ -62,6 +74,7 @@ export default function Navbar() {
                 to="/profile"
                 style={({ isActive }) => ({
                   fontWeight: 600,
+                  textDecoration: "none",
                   color: isActive ? "var(--accent)" : "var(--primary)",
                 })}
               >
@@ -88,6 +101,7 @@ export default function Navbar() {
                 to="/login"
                 style={({ isActive }) => ({
                   fontWeight: 600,
+                  textDecoration: "none",
                   color: isActive ? "var(--accent)" : "var(--primary)",
                 })}
               >
@@ -98,6 +112,7 @@ export default function Navbar() {
                 to="/register"
                 style={({ isActive }) => ({
                   fontWeight: 600,
+                  textDecoration: "none",
                   color: isActive ? "var(--accent)" : "var(--primary)",
                 })}
               >

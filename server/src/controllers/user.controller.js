@@ -58,3 +58,28 @@ export async function getUserCars(req, res) {
     res.status(500).json({ message: "Failed to fetch user cars" });
   }
 }
+
+export async function getMyStats(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const [active, sold] = await Promise.all([
+      prisma.car.count({
+        where: { ownerId: userId, isSold: false },
+      }),
+      prisma.car.count({
+        where: { ownerId: userId, isSold: true },
+      }),
+    ]);
+
+    res.json({
+      active,
+      sold,
+      total: active + sold,
+    });
+  } catch (err) {
+    console.error("GET MY STATS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch stats" });
+  }
+}
+

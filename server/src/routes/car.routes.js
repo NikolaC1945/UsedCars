@@ -10,15 +10,20 @@ import {
   markCarAsSold,
 } from "../controllers/car.controller.js";
 
-import { authRequired } from "../middleware/authMiddleware.js";
+import {
+  authRequired,
+  optionalAuth,
+} from "../middleware/authMiddleware.js";
+
 import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
 /* =======================
-   GET ALL
+   GET ALL CARS (HOME)
+   OPTIONAL AUTH → BITNO ZA ❤️
 ======================= */
-router.get("/", getCars);
+router.get("/", optionalAuth, getCars);
 
 /* =======================
    GET MY CARS (PROFILE)
@@ -31,12 +36,13 @@ router.get("/my", authRequired, getMyCars);
 router.patch("/:id/sold", authRequired, markCarAsSold);
 
 /* =======================
-   GET ONE
+   GET ONE CAR (DETAILS)
+   OPTIONAL AUTH → BITNO ZA ❤️
 ======================= */
-router.get("/:id", getCarById);
+router.get("/:id", optionalAuth, getCarById);
 
 /* =======================
-   CREATE
+   CREATE CAR
 ======================= */
 router.post(
   "/",
@@ -46,7 +52,7 @@ router.post(
 );
 
 /* =======================
-   UPDATE
+   UPDATE CAR
 ======================= */
 router.put(
   "/:id",

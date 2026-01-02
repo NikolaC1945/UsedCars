@@ -7,12 +7,25 @@ import path from "path";
 ======================= */
 export const getCars = async (req, res) => {
   try {
+    const userId = req.user?.id;
+
     const cars = await prisma.car.findMany({
       where: { isSold: false },
       orderBy: { createdAt: "desc" },
+      include: {
+        favorites: userId
+          ? { where: { userId }, select: { id: true } }
+          : false,
+      },
     });
 
-    res.json(cars);
+    const formatted = cars.map(car => ({
+      ...car,
+      isFavorite: userId ? car.favorites.length > 0 : false,
+      favorites: undefined,
+    }));
+
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch cars" });
   }
@@ -23,8 +36,11 @@ export const getCars = async (req, res) => {
 ======================= */
 export const getCarById = async (req, res) => {
   try {
+    const userId = req.user?.id;
+    const carId = Number(req.params.id);
+
     const car = await prisma.car.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id: carId },
       include: {
         owner: {
           select: {
@@ -33,6 +49,12 @@ export const getCarById = async (req, res) => {
             email: true,
           },
         },
+        favorites: userId
+          ? {
+              where: { userId },
+              select: { id: true },
+            }
+          : false,
       },
     });
 
@@ -40,8 +62,13 @@ export const getCarById = async (req, res) => {
       return res.status(404).json({ message: "Car not found" });
     }
 
-    res.json(car);
+    res.json({
+      ...car,
+      isFavorite: userId ? car.favorites.length > 0 : false,
+      favorites: undefined,
+    });
   } catch (err) {
+    console.error("GET CAR ERROR:", err);
     res.status(500).json({ message: "Failed to fetch car" });
   }
 };
@@ -236,13 +263,9 @@ export const markCarAsSold = async (req, res) => {
       where: { id: carId },
     });
 
-    if (!car) {
-      return res.status(404).json({ message: "Car not found" });
-    }
-
-    if (car.ownerId !== req.user.id) {
+    if (!car) return res.status(404).json({ message: "Car not found" });
+    if (car.ownerId !== req.user.id)
       return res.status(403).json({ message: "Forbidden" });
-    }
 
     const updated = await prisma.car.update({
       where: { id: carId },
@@ -267,15 +290,11 @@ export const deleteCar = async (req, res) => {
       where: { id: carId },
     });
 
-    if (!car) {
-      return res.status(404).json({ message: "Car not found" });
-    }
+    if (!car) return res.status(404).json({ message: "Car not found" });
 
     car.images.forEach(img => {
       const fullPath = path.join(process.cwd(), img);
-      if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-      }
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     });
 
     await prisma.car.delete({

@@ -3,7 +3,8 @@ import { authRequired } from "../middleware/authMiddleware.js";
 import {
   getMyProfile,
   getUserCars,
-  getUserById
+  getUserById,
+  getMyStats 
 } from "../controllers/user.controller.js";
 
 

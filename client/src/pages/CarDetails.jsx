@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getCarById } from "../api/cars.api";
 import { useAuth } from "../context/AuthContext";
+import { toggleFavorite } from "../api/favorites.api";
 
 const API_URL = "http://localhost:5000";
 
@@ -12,17 +13,26 @@ export default function CarDetails() {
 
   const [car, setCar] = useState(null);
   const [index, setIndex] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
 
+  /* =======================
+     FETCH CAR
+  ======================= */
   useEffect(() => {
-    getCarById(id).then(setCar);
+    getCarById(id).then(data => {
+      setCar(data);
+      setIsFavorite(Boolean(data.isFavorite));
+    });
   }, [id]);
 
-  if (!car) return <p style={{ padding: 40 }}>Loading...</p>;
+  if (!car) {
+    return <p style={{ padding: 40 }}>Loading...</p>;
+  }
 
   const images = car.images || [];
 
   const isOwner =
-    isAuthenticated && user?.id === car.ownerId;
+    isAuthenticated && String(user?.id) === String(car.ownerId);
 
   function prev() {
     setIndex(i => (i === 0 ? images.length - 1 : i - 1));
@@ -35,22 +45,39 @@ export default function CarDetails() {
   function goToSellerProfile() {
     if (!car.owner) return;
 
-    if (isOwner) {
-      navigate("/profile");
-    } else {
-      navigate(`/profile/${car.owner.id}`);
+    if (isOwner) navigate("/profile");
+    else navigate(`/profile/${car.owner.id}`);
+  }
+
+  /* =======================
+     FAVORITE TOGGLE
+  ======================= */
+  async function handleToggleFavorite(e) {
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await toggleFavorite(car.id);
+      setIsFavorite(res.favorited);
+    } catch (err) {
+      console.error("Toggle favorite failed", err);
     }
   }
 
   return (
     <div style={{ maxWidth: 1200, margin: "30px auto", padding: "0 24px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 32 }}>
-        {/* LEFT */}
+        {/* ================= LEFT ================= */}
         <div>
           {/* CAROUSEL */}
           <div style={{ position: "relative" }}>
             <img
               src={`${API_URL}${images[index]}`}
+              alt={car.title}
               style={{
                 width: "100%",
                 height: 420,
@@ -61,6 +88,53 @@ export default function CarDetails() {
 
             <button onClick={prev} style={arrow("left")}>‹</button>
             <button onClick={next} style={arrow("right")}>›</button>
+
+            {/* ❤️ FAVORITE */}
+            {isAuthenticated && (
+              <button
+                onClick={handleToggleFavorite}
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  background: "rgba(0,0,0,0.6)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 44,
+                  height: 44,
+                  color: isFavorite ? "red" : "#fff",
+                  fontSize: 20,
+                  cursor: "pointer",
+                  transition: "transform .15s ease",
+                }}
+                onMouseEnter={e =>
+                  (e.currentTarget.style.transform = "scale(1.1)")
+                }
+                onMouseLeave={e =>
+                  (e.currentTarget.style.transform = "scale(1)")
+                }
+              >
+                ♥
+              </button>
+            )}
+
+            {/* SOLD BADGE */}
+            {car.isSold && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  background: "#000",
+                  color: "#fff",
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  borderRadius: 4,
+                }}
+              >
+                SOLD
+              </div>
+            )}
           </div>
 
           {/* THUMBNAILS */}
@@ -91,20 +165,14 @@ export default function CarDetails() {
           </section>
         </div>
 
-        {/* RIGHT */}
+        {/* ================= RIGHT ================= */}
         <aside>
           <h1 style={{ marginBottom: 8 }}>{car.title}</h1>
           <p style={{ color: "#666", marginBottom: 16 }}>
             {car.brand} {car.model}
           </p>
 
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              marginBottom: 24,
-            }}
-          >
+          <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 24 }}>
             €{car.price}
           </div>
 
@@ -125,7 +193,7 @@ export default function CarDetails() {
             <Spec label="Condition" value="Used" />
           </div>
 
-          {/* SELLER INFO – CLICKABLE */}
+          {/* SELLER */}
           <div
             onClick={goToSellerProfile}
             style={{
@@ -145,7 +213,6 @@ export default function CarDetails() {
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                objectFit: "cover",
                 background: "#f2f2f2",
               }}
             />
@@ -160,7 +227,7 @@ export default function CarDetails() {
             </div>
           </div>
 
-          {/* EDIT – SAMO AKO JE OWNER */}
+          {/* EDIT – ONLY OWNER */}
           {isOwner && (
             <Link to={`/edit/${car.id}`}>
               <button
@@ -183,6 +250,10 @@ export default function CarDetails() {
     </div>
   );
 }
+
+/* =======================
+   HELPERS
+======================= */
 
 function Spec({ label, value }) {
   return (

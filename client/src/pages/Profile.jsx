@@ -10,22 +10,15 @@ export default function Profile() {
   const navigate = useNavigate();
   const { userId } = useParams();
 
-  // ako nema userId → moj profil
   const isOwnProfile = !userId || String(userId) === String(user?.id);
 
-  const [activeTab, setActiveTab] = useState("active");
+  const [activeTab, setActiveTab] = useState("active"); // active | sold | saved
   const [cars, setCars] = useState([]);
+  const [savedCars, setSavedCars] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // korisnik čiji se profil gleda
   const [profileUser, setProfileUser] = useState(null);
-
-  // stats (nezavisno od taba)
-  const [stats, setStats] = useState({
-    active: 0,
-    sold: 0,
-    total: 0,
-  });
+  const [stats, setStats] = useState({ active: 0, sold: 0, total: 0 });
 
   /* =======================
      FETCH PROFILE USER
@@ -43,7 +36,7 @@ export default function Profile() {
   }, [isOwnProfile, userId, user]);
 
   /* =======================
-     FETCH STATS (SAMO MOJ PROFIL)
+     FETCH STATS (MY PROFILE)
   ======================= */
   useEffect(() => {
     if (!isOwnProfile) return;
@@ -64,18 +57,28 @@ export default function Profile() {
   }, [isOwnProfile]);
 
   /* =======================
-     FETCH CARS (TAB)
+     FETCH LIST / SAVED
   ======================= */
   useEffect(() => {
     setLoading(true);
 
-    const url = isOwnProfile
-      ? `/cars/my?status=${activeTab}`
-      : `/users/${userId}/cars`; // tuđi profil → samo active
+    let request;
 
-    api
-      .get(url)
-      .then(res => setCars(res.data))
+    if (isOwnProfile) {
+      if (activeTab === "saved") {
+        request = api.get("/favorites");
+      } else {
+        request = api.get(`/cars/my?status=${activeTab}`);
+      }
+    } else {
+      request = api.get(`/users/${userId}/cars`);
+    }
+
+    request
+      .then(res => {
+        if (activeTab === "saved") setSavedCars(res.data);
+        else setCars(res.data);
+      })
       .finally(() => setLoading(false));
   }, [activeTab, userId, isOwnProfile]);
 
@@ -93,17 +96,14 @@ export default function Profile() {
     if (!confirm("Are you sure you want to delete this car?")) return;
     await api.delete(`/cars/${id}`);
     setCars(prev => prev.filter(c => c.id !== id));
-    setStats(s => ({
-      ...s,
-      total: s.total - 1,
-    }));
+    setStats(s => ({ ...s, total: s.total - 1 }));
   }
+
+  const list = activeTab === "saved" ? savedCars : cars;
 
   return (
     <div className="w-full px-10 py-6">
-      {/* =======================
-         PROFILE HEADER
-      ======================= */}
+      {/* PROFILE HEADER */}
       <div className="flex items-center gap-6 mb-8 p-6 border rounded-lg bg-white">
         <img
           src="/avatar.png"
@@ -135,9 +135,7 @@ export default function Profile() {
         )}
       </div>
 
-      {/* =======================
-         STATS (SAMO MOJ PROFIL)
-      ======================= */}
+      {/* STATS */}
       {isOwnProfile && (
         <div className="grid grid-cols-3 gap-6 mb-8">
           <StatCard label="Active listings" value={stats.active} />
@@ -146,12 +144,10 @@ export default function Profile() {
         </div>
       )}
 
-      {/* =======================
-         TABS (SAMO MOJ PROFIL)
-      ======================= */}
+      {/* TABS */}
       {isOwnProfile && (
         <div className="flex gap-4 mb-6">
-          {["active", "sold"].map(tab => (
+          {["active", "sold", "saved"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -161,37 +157,37 @@ export default function Profile() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {tab === "active" ? "Active" : "Sold"}
+              {tab === "active"
+                ? "Active"
+                : tab === "sold"
+                ? "Sold"
+                : "Saved"}
             </button>
           ))}
         </div>
       )}
 
-      {/* =======================
-         CONTENT
-      ======================= */}
-      {loading && <p className="text-gray-500">Loading cars...</p>}
+      {/* CONTENT */}
+      {loading && <p className="text-gray-500">Loading...</p>}
 
-      {!loading && cars.length === 0 && (
+      {!loading && list.length === 0 && (
         <p className="text-gray-500 mt-10">
-          {isOwnProfile
-            ? activeTab === "sold"
-              ? "You don’t have any sold cars yet."
-              : "You don’t have any active listings."
-            : "This user has no active listings."}
+          {activeTab === "saved"
+            ? "You don’t have any saved cars."
+            : "No listings to show."}
         </p>
       )}
 
-      {!loading && cars.length > 0 && (
+      {!loading && list.length > 0 && (
         <div className="grid grid-cols-3 gap-6">
-          {cars.map(car => (
+          {list.map(car => (
             <div
               key={car.id}
-              onClick={() => {
-                if (!isOwnProfile) navigate(`/cars/${car.id}`);
-              }}
+              onClick={() => navigate(`/cars/${car.id}`)}
               className={`border rounded overflow-hidden cursor-pointer ${
-                isOwnProfile ? "group relative" : ""
+                isOwnProfile && activeTab !== "saved"
+                  ? "group relative"
+                  : ""
               }`}
             >
               {/* IMAGE */}
@@ -200,12 +196,20 @@ export default function Profile() {
                   src={`${API_URL}${car.cover}`}
                   alt={car.title}
                   className={`w-full h-full object-cover transition ${
-                    isOwnProfile ? "group-hover:blur-sm duration-300" : ""
+                    isOwnProfile && activeTab !== "saved"
+                      ? "group-hover:blur-sm duration-300"
+                      : ""
                   }`}
                 />
 
-                {/* OVERLAY – SAMO MOJ PROFIL */}
-                {isOwnProfile && (
+                {car.isSold && (
+                  <span className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                    SOLD
+                  </span>
+                )}
+
+                {/* HOVER OVERLAY – ONLY OWN PROFILE */}
+                {isOwnProfile && activeTab !== "saved" && (
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                     <div className="grid grid-cols-2 gap-3">
                       <ActionButton
@@ -216,14 +220,18 @@ export default function Profile() {
                       {activeTab === "active" && (
                         <>
                           <ActionButton
-                            label="Edit car"
+                            label="Edit"
                             variant="secondary"
-                            onClick={() => navigate(`/edit/${car.id}`)}
+                            onClick={() =>
+                              navigate(`/edit/${car.id}`)
+                            }
                           />
                           <ActionButton
                             label="Mark as sold"
                             variant="primary"
-                            onClick={() => handleMarkAsSold(car.id)}
+                            onClick={() =>
+                              handleMarkAsSold(car.id)
+                            }
                           />
                         </>
                       )}
